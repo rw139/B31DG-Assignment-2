@@ -3,10 +3,10 @@
 #include <Ticker.h>
 
 //defining I/O pins
-#define t1out 1 //T1 digital out pin
-#define t2in 2  //T2 digital in pin
-#define t3in 3  //T3 digital in pin
-#define t4in 4  //T4 analogue in pin
+#define t1out 1   //T1 digital out pin
+#define t2in 2    //T2 digital in pin
+#define t3in 3    //T3 digital in pin
+#define t4in 4    //T4 analogue in pin
 #define t4out 10  //T4 LED pin out
 
 //calling monitor and ticker
@@ -28,10 +28,11 @@ unsigned long tm;
 unsigned long newtm;
 
 //freqency calculation on Task2 & 3 square waves
-float sighigh;
-float siglow;
-int freq1;
-int freq2;
+unsigned long freqhigh;
+unsigned int freq1;
+unsigned int freq2;
+int mapf1;
+int mapf2;
 
 
 //Task4 avg analogue value calculation
@@ -67,17 +68,17 @@ void setup() {
 
 void loop() {
   /*
-  //task timing loop 
+  //task timing loop
+  //takes average time of 1000 task runs 
   for(int i = 0;i<1000; i++){
   tm = micros();
-  Task2();
+  Task1();
   newtm = newtm + (micros()-tm);
   }
   newtm = newtm/1000;
   Serial.println(newtm);
   newtm = 0;
   */
-
 }
 
 void Task1(){
@@ -96,18 +97,16 @@ void Task1(){
 void Task2(){
   //measure square wave freq (Hz)
   monitor.jobStarted(2);
-  sighigh = pulseIn(t2in, HIGH, 1000);
-  siglow = pulseIn(t2in, LOW, 1000);
-  freq1 = 1000000 / (sighigh + siglow);
+  freqhigh = pulseIn(t2in, HIGH, 3000);
+  freq1 = 1000000 / (freqhigh*2);
   monitor.jobEnded(2);
 }
 
 void Task3(){
   //measure square wave freq (Hz)
   monitor.jobStarted(3);
-  sighigh = pulseIn(t3in, HIGH, 1000);
-  siglow = pulseIn(t3in, LOW, 1000);
-  freq2 = 1000000 / (sighigh + siglow);
+  freqhigh = pulseIn(t3in, HIGH, 3000);
+  freq2 = 1000000 / (freqhigh*2);
   monitor.jobEnded(3);
 }
 
@@ -137,29 +136,18 @@ void Task4(){
 }
 
 void Task5(){
-  //running Task5 every 100ms - counter % 25 (removes need for 200ms cycle)
+  //running Task5 every 100ms - counter % 25 (removes need for 200ms/50 case frame cycle)
   if(framecount % 25 == 0){
   monitor.jobStarted(5);
-  //setting outliers of freq range as 0 or 1000Hz
-   if(freq1 > 1000){
-    freq1 = 1000;    
-  }
-  else if(freq2 > 1000){
-    freq2 = 1000;
-  }
-  else if(freq1 < 333){
-    freq1 = 0;
-  }
-  else if(freq2 < 333){
-    freq2 = 0;
-  }
+  //setting outliers of freq range as 0 or 99
+  mapf1 = map(freq1, 333, 1000, 0, 99);
+  mapf2 = map(freq2, 500, 1000, 0, 99);
 
-  //calculating for 0-99 range
-  freq1 = freq1/333*33;
-  freq2 = freq2/333*33;
-
+  mapf1 = constrain(mapf1, 0, 99);
+  mapf2 = constrain(mapf2, 0, 99);
+  
   //print T2 & 3 values
-  Serial.printf("%d, %d \n", freq1, freq2);
+  Serial.printf("%d, %d \n", mapf1, mapf2);
   monitor.jobEnded(5);
   }
   else{
